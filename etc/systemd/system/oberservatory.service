@@ -1,0 +1,14 @@
+[Unit]
+Description=weather recorder
+After=syslog.target network.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/recorder/
+ExecStart=python3 main.py
+
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
