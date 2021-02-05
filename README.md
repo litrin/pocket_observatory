@@ -9,4 +9,4 @@
  - 3.3~5V 8.2mA可调光敏传感器 x 1
  
 # 面包板
-!(https://github.com/litrin/pocket_observatory/blob/master/design/fritzing.png?raw=true)
+![circuit](https://github.com/litrin/pocket_observatory/blob/master/design/fritzing.png?raw=true)
