@@ -1,6 +1,8 @@
 import RPi.GPIO as GPIO
 import dht11
 import time
+import serial
+import re 
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
@@ -9,15 +11,19 @@ class Sensor:
     pin = 0
     def __init__(self, pin):
         self.pin = pin
-        
+    
+    def read(self):
+        return None
+    
     def __iter__(self):
-        yield None
+        while True:
+            yield self.read()
 
 class TempratureSensor(Sensor):
 
     def read(self):
         instance = dht11.DHT11(pin=self.pin)
-
+            
         result = instance.read()
         if result.is_valid():
             return (result.temperature, result.humidity)
@@ -25,9 +31,6 @@ class TempratureSensor(Sensor):
             time.sleep(1)
             return self.read()
     
-    def __iter__(self):
-        while True:
-            yield self.read()
 
 class LightingSensor(Sensor):
 
@@ -38,22 +41,52 @@ class LightingSensor(Sensor):
             return 0
         return 1
 
-    def __iter__(self):
-        GPIO.setup(self.pin, GPIO.IN)
-        #GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+class SensorPlatform(Sensor):
+    
+    def __init__(self, port = "/dev/ttyS0", bps=9600, timeout=1):
+        self.port = port
+        self.bps = bps
+        self.timeout = timeout
+        
+        GPIO.setup(40, GPIO.OUT, initial=GPIO.LOW)
+        # GPIO.output(40, GPIO.LOW)
+
+    def weakup(self):
+        # send signal to Larduino pin D2 to weak up sensor platform    
+        GPIO.output(40, GPIO.HIGH)
+        time.sleep(0.01)
+        GPIO.output(40, GPIO.LOW)
+    
+    
+    def read(self):
+        self.weakup()
+        
+        ser = serial.Serial(self.port, self.bps, timeout=self.timeout)
+        result = 0
+        regex = r"^\d[\d|\.]"
         while True:
-            if GPIO.input(self.pin):
-                yield 0
-            else:
-                yield 1
+            try:
+                c = ser.readline().decode()
+            except:
+                pass
+            
+            if re.match(regex, c):
+                result = list(map(int, c.split(",")))
+                break
+        ser.close()
+
+        
+        return result
     
 
 if __name__ == "__main__":
     #sensor = TempratureSensor(16)
-    sensor = LightingSensor(18)
-    
+    sensor = SensorPlatform()
+    c = 0
     for i in sensor:
-        time.sleep(1)
-        print(i)
+        c += 1
+        print(c, str(i))
+        time.sleep(5)
 
 
