@@ -43,6 +43,12 @@ class LightingSensor(Sensor):
 
 
 class SensorPlatform(Sensor):
+    column = {             
+              "illumination": int,
+              "lighting": bool,
+              "temprature": float,
+              "humidity":float,
+            }
     
     def __init__(self, port = "/dev/ttyS0", bps=9600, timeout=1):
         self.port = port
@@ -58,10 +64,17 @@ class SensorPlatform(Sensor):
         time.sleep(0.01)
         GPIO.output(40, GPIO.LOW)
     
+    def decode(self, raw):
+        raw = raw.split(",")
+        cov = {}
+        for i, key in enumerate(self.column.keys()):
+            cov[key] = self.column[key](raw[i])
+            
+        return cov
     
     def read(self):
         self.weakup()
-        
+
         ser = serial.Serial(self.port, self.bps, timeout=self.timeout)
         result = 0
         regex = r"^\d[\d|\.]"
@@ -72,7 +85,7 @@ class SensorPlatform(Sensor):
                 pass
             
             if re.match(regex, c):
-                result = list(map(int, c.split(",")))
+                result = self.decode(c)
                 break
         ser.close()
 
@@ -88,5 +101,6 @@ if __name__ == "__main__":
         c += 1
         print(c, str(i))
         time.sleep(5)
+
 
 
